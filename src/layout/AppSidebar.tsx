@@ -184,8 +184,7 @@ const AppSidebar: React.FC = () => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
     ["main"].forEach((menuType) => {
-      const items = navItems;
-      items.forEach((nav, index) => {
+        navItems.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
             if (isActive(subItem.path)) {
