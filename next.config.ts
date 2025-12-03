@@ -1,3 +1,5 @@
+/* eslint-disable no-restricted-properties */
+import withNextIntl from "next-intl/plugin";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -9,7 +11,7 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
-    
+
     turbopack: {
       rules: {
         '*.svg': {
@@ -18,7 +20,7 @@ const nextConfig: NextConfig = {
         },
       },
     },
-  
+
 };
 
-export default nextConfig;
+export default  withNextIntl()(nextConfig);
