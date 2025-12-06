@@ -42,8 +42,20 @@ export default defineType({
             of: [
               defineArrayMember({
                 name: "answer",
-                type: "string",
-              })
+                type: "object",
+                fields: [
+                  {
+                    name: "answer_name",
+                    title: "Answer name",
+                    type: "string",
+                  },
+                  {
+                    name: "answer_value",
+                    title: "Answer value",
+                    type: "string",
+                  }
+                ]
+              }),
             ]
           }),
         ],
