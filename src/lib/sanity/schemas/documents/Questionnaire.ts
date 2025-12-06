@@ -17,7 +17,7 @@ export default defineType({
   fields: [
     defineField({
       name: "title",
-      description: "Question name",
+      description: "Questionnaire name",
       type: "string",
     }),
     defineField({
