@@ -11,7 +11,7 @@ import { structureTool } from "sanity/structure";
 import { structure } from './structure';
 
 
-export const apiVersion = "2023-06-04";
+export const apiVersion = "2025-02-06";
 
 export default defineConfig({
   title: `PadelNet [${env.NEXT_PUBLIC_SANITY_DATASET}]`,

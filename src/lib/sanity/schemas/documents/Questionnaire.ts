@@ -21,6 +21,13 @@ export default defineType({
       type: "string",
     }),
     defineField({
+      name: "locale",
+      type: "string",
+      readOnly: true,
+      hidden: true,
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
       name: "questions",
       title: "Questions",
       type: "array",
