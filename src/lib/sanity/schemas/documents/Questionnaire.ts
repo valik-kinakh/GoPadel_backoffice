@@ -43,6 +43,11 @@ export default defineType({
             type: "string",
           }),
           defineField({
+            name: "id",
+            title: 'Question id',
+            type: "string",
+          }),
+          defineField({
             name: "answers",
             title: "Answers",
             type: "array",
