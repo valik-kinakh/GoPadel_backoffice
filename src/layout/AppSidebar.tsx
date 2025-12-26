@@ -18,6 +18,7 @@ import {
   CalenderIcon
 } from "../icons/index";
 import { useTranslations } from "next-intl";
+import { route } from "@/lib/router/route";
 
 type NavItem = {
   name: string;
@@ -35,52 +36,52 @@ const AppSidebar: React.FC = () => {
     {
       icon: <UserIcon />,
       name: t('players'),
-      path: "/"
+      path: route({ type: 'PLAYERS' })
     },
     {
       icon: <CalenderIcon />,
       name: t('matches'),
-      path: "/"
+      path: route({ type: 'MATCHES' })
     },
     {
       icon: <ShootingStarIcon />,
       name: t('tournaments'),
-      path: "/studio"
+      path: route({ type: 'TOURNAMENTS' })
     },
     {
       icon: <GroupIcon />,
       name: t('organizations'),
-      path: "/"
+      path: route({ type: 'ORGANIZATIONS' })
     },
     {
       icon: <BoxIcon />,
       name: t('clubs'),
-      path: "/"
+      path: route({ type: 'CLUBS' })
     },
     {
       icon: <PieChartIcon />,
       name: t('reports'),
-      path: "/"
+      path: route({ type: 'REPORTS' })
     },
     {
       icon: <LockIcon />,
       name: t('userAccess'),
-      path: "/"
+      path: route({ type: 'USER_ACCESS' })
     },
     {
       icon: <GridIcon />,
       name: t('settings'),
-      path: "/"
+      path: route({ type: 'SETTINGS' })
     },
     {
       icon: <PlugInIcon />,
       name: t('sanity'),
-      path: "/studio"
+      path: route({ type: 'STUDIO' })
     },
     {
       icon: <BoltIcon />,
       name: t('applicationSettings'),
-      path: "/"
+      path: route({ type: 'APPLICATION_SETTINGS' })
     },
     // {
     //     icon: <BoxCubeIcon />,
@@ -328,7 +329,7 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  <>{t('menu')}</>
                 ) : (
                   <HorizontaLDots />
                 )}
