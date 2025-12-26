@@ -1,14 +1,23 @@
 "use client";
-import React, { useEffect, useRef, useState,useCallback } from "react";
+import React, { useEffect, useRef, useState,useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
 import {
-  BoxCubeIcon,
   ChevronDownIcon,
-  GridIcon,
+  UserIcon,
   HorizontaLDots,
+  LockIcon,
+  PlugInIcon,
+  BoltIcon,
+  PieChartIcon,
+  GridIcon,
+  GroupIcon,
+  BoxIcon,
+  ShootingStarIcon,
+  CalenderIcon
 } from "../icons/index";
+import { useTranslations } from "next-intl";
 
 type NavItem = {
   name: string;
@@ -17,30 +26,76 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
-const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/"
-  },
-    {
-        icon: <BoxCubeIcon />,
-        name: "UI Elements",
-        subItems: [
-            { name: "Alerts", path: "/alerts", pro: false },
-            { name: "Avatar", path: "/avatars", pro: false },
-            { name: "Badge", path: "/badge", pro: false },
-            { name: "Buttons", path: "/buttons", pro: false },
-            { name: "Images", path: "/images", pro: false },
-            { name: "Modals", path: "/modals", pro: false },
-            { name: "Videos", path: "/videos", pro: false },
-        ],
-    },
-];
-
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const t = useTranslations('NavItems');
+
+  const navItems: NavItem[] = useMemo(() => [
+    {
+      icon: <UserIcon />,
+      name: t('players'),
+      path: "/"
+    },
+    {
+      icon: <CalenderIcon />,
+      name: t('matches'),
+      path: "/"
+    },
+    {
+      icon: <ShootingStarIcon />,
+      name: t('tournaments'),
+      path: "/studio"
+    },
+    {
+      icon: <GroupIcon />,
+      name: t('organizations'),
+      path: "/"
+    },
+    {
+      icon: <BoxIcon />,
+      name: t('clubs'),
+      path: "/"
+    },
+    {
+      icon: <PieChartIcon />,
+      name: t('reports'),
+      path: "/"
+    },
+    {
+      icon: <LockIcon />,
+      name: t('userAccess'),
+      path: "/"
+    },
+    {
+      icon: <GridIcon />,
+      name: t('settings'),
+      path: "/"
+    },
+    {
+      icon: <PlugInIcon />,
+      name: t('sanity'),
+      path: "/studio"
+    },
+    {
+      icon: <BoltIcon />,
+      name: t('applicationSettings'),
+      path: "/"
+    },
+    // {
+    //     icon: <BoxCubeIcon />,
+    //     name: "UI Elements",
+    //     subItems: [
+    //         { name: "Alerts", path: "/alerts", pro: false },
+    //         { name: "Avatar", path: "/avatars", pro: false },
+    //         { name: "Badge", path: "/badge", pro: false },
+    //         { name: "Buttons", path: "/buttons", pro: false },
+    //         { name: "Images", path: "/images", pro: false },
+    //         { name: "Modals", path: "/modals", pro: false },
+    //         { name: "Videos", path: "/videos", pro: false },
+    //     ],
+    // },
+  ], []);
 
   const renderMenuItems = (
     navItems: NavItem[],

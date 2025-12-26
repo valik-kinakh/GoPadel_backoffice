@@ -1,5 +1,17 @@
 {
   "Shared": {
     "test": "Test"
+  },
+  "NavItems": {
+    "userAccess": "Доступ користувачів",
+    "sanity": "Sanity",
+    "applicationSettings": "Конфігурація застосунку",
+    "players": "Гравці",
+    "reports": "Звіти",
+    "settings": "Налаштування",
+    "organizations": "Організації",
+    "clubs": "Клуби",
+    "tournaments": "Турніри",
+    "matches": "Матчі"
   }
 }
