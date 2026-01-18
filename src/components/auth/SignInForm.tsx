@@ -13,6 +13,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useAdmin } from "@/context/AdminContext";
 
 const signInSchema = z.object({
   email: z
@@ -28,6 +29,7 @@ type SignInFormValues = z.infer<typeof signInSchema>;
 
 export default function SignInForm() {
   const router = useRouter();
+  const { setAdmin } = useAdmin();
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const {
@@ -60,6 +62,7 @@ export default function SignInForm() {
       }
 
       const token = payload?.token ?? null;
+      const admin = payload?.admin ?? null;
       if (!token) {
         if (response?.status === 401) {
           throw new Error("Invalid email or password.");
@@ -67,13 +70,14 @@ export default function SignInForm() {
         throw new Error("Unable to sign in. Please try again.");
       }
 
-      return { token, keepLoggedIn: Boolean(values.keepLoggedIn) };
+      return { token, keepLoggedIn: Boolean(values.keepLoggedIn), admin };
     },
-    onSuccess: async ({ token, keepLoggedIn }) => {
+    onSuccess: async ({ token, keepLoggedIn, admin }) => {
       setAuthError(null);
       await setSessionToken(token, {
         maxAgeSeconds: keepLoggedIn ? 60 * 60 * 24 * 30 : undefined,
       });
+      setAdmin(admin);
       router.push('/');
     },
     onError: (error) => {
