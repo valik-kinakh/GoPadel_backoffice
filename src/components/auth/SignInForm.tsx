@@ -7,12 +7,45 @@ import { EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
+import { z } from "zod";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const signInSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+  keepLoggedIn: z.boolean().optional(),
+});
+
+type SignInFormValues = z.infer<typeof signInSchema>;
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<SignInFormValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      keepLoggedIn: false,
+    },
+  });
 
   const t = useTranslations('SignIn');
+
+  const onSubmit = async (values: SignInFormValues) => {
+    // TODO: Wire up API login + session token storage.
+    // Keeping this placeholder to avoid changing auth flow behavior.
+    console.log("Sign in", values);
+  };
+
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
@@ -26,22 +59,49 @@ export default function SignInForm() {
             </p>
           </div>
           <div>
-            <form>
+            <form onSubmit={handleSubmit(onSubmit)}>
               <div className="space-y-6">
                 <div>
                   <Label>
                     {t('email')} <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="example@gmail.com" type="email" />
+                  <Controller
+                    name="email"
+                    control={control}
+                    render={({ field }) => {
+                      const { ...fieldProps } = field;
+                      return (
+                        <Input
+                          {...fieldProps}
+                          placeholder="example@gmail.com"
+                          type="email"
+                          error={Boolean(errors.email)}
+                          hint={errors.email?.message ? t('emailHint') : undefined}
+                        />
+                      );
+                    }}
+                  />
                 </div>
                 <div>
                   <Label>
                     {t('password')} <span className="text-error-500">*</span>{" "}
                   </Label>
                   <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder={t('tip')}
+                    <Controller
+                      name="password"
+                      control={control}
+                      render={({ field }) => {
+                        const { ...fieldProps } = field;
+                        return (
+                          <Input
+                            {...fieldProps}
+                            type={showPassword ? "text" : "password"}
+                            placeholder={t('tip')}
+                            error={Boolean(errors.password)}
+                            hint={errors.password?.message ? t('passwordHint') : undefined}
+                          />
+                        );
+                      }}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -57,7 +117,16 @@ export default function SignInForm() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Checkbox checked={isChecked} onChange={setIsChecked} />
+                    <Controller
+                      name="keepLoggedIn"
+                      control={control}
+                      render={({ field }) => (
+                        <Checkbox
+                          checked={Boolean(field.value)}
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
                     <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
                       {t('keepLoggedIn')}
                     </span>
@@ -70,7 +139,7 @@ export default function SignInForm() {
                   </Link>
                 </div>
                 <div>
-                  <Button className="w-full" size="sm">
+                  <Button className="w-full" size="sm" disabled={isSubmitting}>
                     {t('title')}
                   </Button>
                 </div>

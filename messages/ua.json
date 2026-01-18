@@ -28,7 +28,9 @@
     "password": "Пароль",
     "tip": "Введіть пароль",
     "keepLoggedIn": "Запам'ятати мене",
-    "forgotPassword": "Забули пароль?"
+    "forgotPassword": "Забули пароль?",
+    "emailHint": "Будь ласка, введіть дійсну електронну пошту.",
+    "passwordHint": "Пароль не може бути порожнім."
   },
   "ResetPassword": {
     "title": "Скинути пароль",
