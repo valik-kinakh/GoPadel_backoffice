@@ -1,11 +1,11 @@
-/* eslint-disable no-restricted-properties */
+
 import { createEnv } from "@t3-oss/env-nextjs";
 import { vercel } from "@t3-oss/env-nextjs/presets-zod";
 import { z } from "zod";
 
-const booleanStrictCoerce = z
-  .enum(["true", "false"])
-  .transform((v) => v === "true");
+// const booleanStrictCoerce = z
+//   .enum(["true", "false"])
+//   .transform((v) => v === "true");
 
 export const env = createEnv({
   /**

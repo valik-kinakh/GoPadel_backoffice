@@ -22,7 +22,7 @@ export default defineConfig({
     types: documentSchemas,
   },
   plugins: [
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+     
     colorInput(),
     structureTool({ structure }),
     documentInternationalization({
