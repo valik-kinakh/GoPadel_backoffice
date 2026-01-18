@@ -32,6 +32,7 @@
     "@t3-oss/env-nextjs": "^0.13.8",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/postcss": "^4.1.17",
+    "@tanstack/react-query": "^5.90.19",
     "apexcharts": "^4.7.0",
     "autoprefixer": "^10.4.22",
     "flatpickr": "^4.6.13",
@@ -48,6 +49,7 @@
     "sanity-plugin-asset-source-unsplash": "^4.0.1",
     "sanity-plugin-internationalized-array": "^3.2.0",
     "sanity-plugin-media": "^4.0.0",
+    "superjson": "^2.2.6",
     "swiper": "^11.2.10",
     "tailwind-merge": "^2.6.0",
     "zod": "^4.1.13"

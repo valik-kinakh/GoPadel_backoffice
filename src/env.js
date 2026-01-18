@@ -17,6 +17,7 @@ export const env = createEnv({
     SANITY_DATASET: z.string().min(1),
     SANITY_VIEW_TOKEN: z.string().min(1),
     SECRET_SANITY_EDIT_TOKEN: z.string().min(1),
+    NEXT_PUBLIC_API_URL: z.string().min(1)
   },
 
   /**
@@ -36,6 +37,7 @@ export const env = createEnv({
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
     NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().min(1),
     NEXT_PUBLIC_SANITY_DATASET: z.string().min(1),
+    NEXT_PUBLIC_API_URL: z.string().min(1)
   },
 
   /**
@@ -58,6 +60,7 @@ export const env = createEnv({
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
     NEXT_PUBLIC_SANITY_PROJECT_ID: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
     NEXT_PUBLIC_SANITY_DATASET: process.env.NEXT_PUBLIC_SANITY_DATASET,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
