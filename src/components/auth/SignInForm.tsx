@@ -12,6 +12,7 @@ import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 const signInSchema = z.object({
   email: z
@@ -26,6 +27,7 @@ const signInSchema = z.object({
 type SignInFormValues = z.infer<typeof signInSchema>;
 
 export default function SignInForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const {
@@ -72,6 +74,7 @@ export default function SignInForm() {
       await setSessionToken(token, {
         maxAgeSeconds: keepLoggedIn ? 60 * 60 * 24 * 30 : undefined,
       });
+      router.push('/');
     },
     onError: (error) => {
       setAuthError(
