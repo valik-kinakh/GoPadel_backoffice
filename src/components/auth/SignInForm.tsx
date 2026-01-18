@@ -1,15 +1,17 @@
 "use client";
-import Checkbox from "@/components/form/input/Checkbox";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import { EyeCloseIcon, EyeIcon } from "@/icons";
+import { setSessionToken } from "@/lib/utils/auth/tokenStorage";
+import { postApiAdminLogin } from "@/lib/webApi/generated/requests";
 import Link from "next/link";
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 
 const signInSchema = z.object({
   email: z
@@ -25,6 +27,7 @@ type SignInFormValues = z.infer<typeof signInSchema>;
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const {
     control,
     handleSubmit,
@@ -40,10 +43,48 @@ export default function SignInForm() {
 
   const t = useTranslations('SignIn');
 
+  const signInMutation = useMutation({
+    mutationFn: async (values: SignInFormValues) => {
+      const { payload, error, response } = await postApiAdminLogin(
+        {
+          email: values.email,
+          password: values.password,
+        },
+        { skipAuth: true, safeFetch: true },
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      const token = payload?.token ?? null;
+      if (!token) {
+        if (response?.status === 401) {
+          throw new Error("Invalid email or password.");
+        }
+        throw new Error("Unable to sign in. Please try again.");
+      }
+
+      return { token, keepLoggedIn: Boolean(values.keepLoggedIn) };
+    },
+    onSuccess: async ({ token, keepLoggedIn }) => {
+      setAuthError(null);
+      await setSessionToken(token, {
+        maxAgeSeconds: keepLoggedIn ? 60 * 60 * 24 * 30 : undefined,
+      });
+    },
+    onError: (error) => {
+      setAuthError(
+        error instanceof Error
+          ? error.message
+          : "Unable to sign in. Please try again.",
+      );
+    },
+  });
+
   const onSubmit = async (values: SignInFormValues) => {
-    // TODO: Wire up API login + session token storage.
-    // Keeping this placeholder to avoid changing auth flow behavior.
-    console.log("Sign in", values);
+    setAuthError(null);
+    await signInMutation.mutateAsync(values);
   };
 
   return (
@@ -117,19 +158,6 @@ export default function SignInForm() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Controller
-                      name="keepLoggedIn"
-                      control={control}
-                      render={({ field }) => (
-                        <Checkbox
-                          checked={Boolean(field.value)}
-                          onChange={field.onChange}
-                        />
-                      )}
-                    />
-                    <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
-                      {t('keepLoggedIn')}
-                    </span>
                   </div>
                   <Link
                     href="/reset-password"
@@ -138,8 +166,15 @@ export default function SignInForm() {
                     {t('forgotPassword')}
                   </Link>
                 </div>
+                {authError && (
+                  <p className="text-sm text-error-500">{authError}</p>
+                )}
                 <div>
-                  <Button className="w-full" size="sm" disabled={isSubmitting}>
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    disabled={isSubmitting || signInMutation.isPending}
+                  >
                     {t('title')}
                   </Button>
                 </div>
