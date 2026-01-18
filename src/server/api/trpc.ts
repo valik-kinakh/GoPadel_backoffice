@@ -9,7 +9,6 @@
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { sleep } from "@/lib/utils/sleep";
 
 /**
  * 1. CONTEXT
@@ -71,34 +70,3 @@ export const createCallerFactory = t.createCallerFactory;
  */
 export const createTRPCRouter = t.router;
 
-/**
- * Middleware for timing procedure execution and adding an articifial delay in development.
- *
- * You can remove this if you don't like it, but it can help catch unwanted waterfalls by simulating
- * network latency that would occur in production but not in local development.
- *
- * @example
- * export const publicProcedure = t.procedure.use(timingMiddleware);
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const timingMiddleware = t.middleware(async ({ next }) => {
-  if (t._config.isDev) {
-    // artificial delay in dev
-    const waitMs = Math.floor(Math.random() * 400) + 100;
-
-    await sleep(waitMs);
-  }
-
-  const result = await next();
-
-  return result;
-});
-
-/**
- * Public (unauthenticated) procedure
- *
- * This is the base piece you use to build new queries and mutations on your tRPC API. It does not
- * guarantee that a user querying is authorized, but you can still access user session data if they
- * are logged in.
- */
-export const publicProcedure = t.procedure;
