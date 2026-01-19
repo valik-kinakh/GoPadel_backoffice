@@ -69,6 +69,18 @@ export const postApiAdmin = (
     }
   
 /**
+ * @summary Get current admin details by token
+ */
+export const getApiAdmin = (
+    
+ options?: SecondParameter<typeof webApiFetch<AdminResponse>>,) => {
+      return webApiFetch<AdminResponse>(
+      {url: `/api/Admin`, method: 'GET'
+    },
+      options);
+    }
+  
+/**
  * @summary Request password recovery email
  */
 export const postApiAdminPasswordRecover = (
@@ -402,6 +414,7 @@ export const putApiOrganizationIdVerify = (
   
 export type PostApiAdminLoginResult = NonNullable<Awaited<ReturnType<typeof postApiAdminLogin>>>
 export type PostApiAdminResult = NonNullable<Awaited<ReturnType<typeof postApiAdmin>>>
+export type GetApiAdminResult = NonNullable<Awaited<ReturnType<typeof getApiAdmin>>>
 export type PostApiAdminPasswordRecoverResult = NonNullable<Awaited<ReturnType<typeof postApiAdminPasswordRecover>>>
 export type PostApiAdminPasswordValidateTokenResult = NonNullable<Awaited<ReturnType<typeof postApiAdminPasswordValidateToken>>>
 export type PostApiAdminPasswordResetResult = NonNullable<Awaited<ReturnType<typeof postApiAdminPasswordReset>>>
