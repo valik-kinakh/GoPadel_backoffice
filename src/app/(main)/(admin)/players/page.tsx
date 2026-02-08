@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 interface PlayersPageProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; count?: string }>;
 }
 
 export default async function PlayersPage({ searchParams }: PlayersPageProps) {
@@ -22,15 +22,16 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
     redirect("/");
   }
 
-  // Get page from search params
+  // Get page and count from search params
   const resolvedParams = await searchParams;
   const page = parseInt(resolvedParams.page || "1", 10);
+  const count = parseInt(resolvedParams.count || "20", 10);
 
   // Fetch players data
   const { payload, error } = await getApiPlayerClients(
     {
       page,
-      count: 20,
+      count,
     },
     {
       safeFetch: true,
@@ -62,6 +63,7 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
         <PlayersTable
           initialData={players}
           initialPage={page}
+          initialCount={count}
           initialTotalPages={totalPages}
         />
       </div>
