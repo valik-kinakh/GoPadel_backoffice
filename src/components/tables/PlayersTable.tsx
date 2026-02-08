@@ -163,6 +163,12 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
                       >
                         Rating
                       </TableCell>
+                      <TableCell
+                        isHeader
+                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                      >
+                        Actions
+                      </TableCell>
                     </TableRow>
                   </TableHeader>
 
@@ -170,7 +176,7 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
                   <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
                     {players.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+                        <TableCell colSpan={5} className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
                           No players found
                         </TableCell>
                       </TableRow>
@@ -220,6 +226,14 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
                           </TableCell>
                           <TableCell className="px-5 py-4 text-start text-gray-500 text-theme-sm dark:text-gray-400">
                             {player.rating ?? "N/A"}
+                          </TableCell>
+                          <TableCell className="px-5 py-4 text-start">
+                            <button
+                              onClick={() => console.log('Player details:', player)}
+                              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+                            >
+                              Details
+                            </button>
                           </TableCell>
                         </TableRow>
                       ))
