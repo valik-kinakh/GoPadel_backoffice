@@ -71,26 +71,46 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (typeof window === "undefined" || !isHydrated) return;
 
-    try {
-      // Get encrypted permissions from cookie
-      const encryptedPermissions = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith(`${PERMISSIONS_COOKIE_NAME}=`))
-        ?.split("=")[1];
+    const decryptPermissionsFromCookie = async () => {
+      try {
+        // Get encrypted permissions from cookie
+        const cookieString = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith(`${PERMISSIONS_COOKIE_NAME}=`));
 
-      if (encryptedPermissions) {
-        const decrypted = decryptPermissions<AdminRolesPermissionsResponse>(
-          decodeURIComponent(encryptedPermissions),
-          env.NEXT_PUBLIC_PERMISSIONS_DECRYPTION_SECRET,
+        if (!cookieString) {
+          setPermissions(null);
+          return;
+        }
+
+        // Extract value after the first '=' to handle base64 padding
+        const encryptedPermissions = cookieString.substring(
+          PERMISSIONS_COOKIE_NAME.length + 1
         );
-        setPermissions(decrypted);
-      } else {
+
+        if (encryptedPermissions) {
+          const decrypted = await decryptPermissions<AdminRolesPermissionsResponse>(
+            encryptedPermissions,
+            env.NEXT_PUBLIC_PERMISSIONS_DECRYPTION_SECRET,
+          );
+          setPermissions(decrypted);
+        } else {
+          setPermissions(null);
+        }
+      } catch (error) {
+        console.error("Failed to decrypt permissions:", error);
         setPermissions(null);
       }
-    } catch (error) {
-      console.error("Failed to decrypt permissions:", error);
-      setPermissions(null);
-    }
+    };
+
+    void decryptPermissionsFromCookie();
+
+    // Poll for cookie changes (permissions are set by middleware)
+    const interval = setInterval(() => {
+      void decryptPermissionsFromCookie();
+    }, 1000); // Check every second
+
+    return () => clearInterval(interval);
   }, [isHydrated]);
 
   const setAdmin = useCallback((nextAdmin: AdminResponse | null) => {
@@ -166,7 +186,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
     [admin, permissions, clearAdmin, isHydrated, setAdmin, hasPermission, hasRole],
   );
 
-  //console.log(value)
+  console.log(value);
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 };

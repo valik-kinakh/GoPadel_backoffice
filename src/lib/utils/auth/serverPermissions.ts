@@ -39,7 +39,7 @@ export async function getServerPermissions(): Promise<AdminRolesPermissionsRespo
       return null;
     }
 
-    const decrypted = decryptPermissions<AdminRolesPermissionsResponse>(
+    const decrypted = await decryptPermissions<AdminRolesPermissionsResponse>(
       encryptedPermissions,
       env.PERMISSIONS_ENCRYPTION_SECRET,
     );
