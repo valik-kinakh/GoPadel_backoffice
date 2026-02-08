@@ -4,17 +4,23 @@ import { getApiPlayerClients } from "@/lib/webApi/generated/requests";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import PlayersTable from "@/components/tables/PlayersTable";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Players | GoPadel Backoffice",
-  description: "View and manage players in the GoPadel platform",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Players");
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+  };
+}
 
 interface PlayersPageProps {
   searchParams: Promise<{ page?: string; count?: string }>;
 }
 
 export default async function PlayersPage({ searchParams }: PlayersPageProps) {
+  const t = await getTranslations("Players");
+  
   // Check for CLIENTS_OVERVIEW permission
   const hasPermission = await hasServerPermission("CLIENTS_OVERVIEW");
 
@@ -42,10 +48,10 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
   if (error || !payload) {
     return (
       <div>
-        <PageBreadcrumb pageTitle="Players" />
+        <PageBreadcrumb pageTitle={t("pageTitle")} />
         <div className="mt-6 p-6 rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
           <p className="text-red-600 dark:text-red-400">
-            Failed to load players. Please try again later.
+            {t("loadError")}
           </p>
         </div>
       </div>
@@ -57,7 +63,7 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Players" />
+      <PageBreadcrumb pageTitle={t("pageTitle")} />
 
       <div className="mt-6">
         <PlayersTable

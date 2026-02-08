@@ -3,8 +3,10 @@
 import GridShape from "@/components/common/GridShape";
 import Link from "next/link";
 import React from "react";
+import { useTranslations } from "next-intl";
 
 export default function Page() {
+  const t = useTranslations('Unauthorized');
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen p-6 overflow-hidden z-1">
       <GridShape />
@@ -31,11 +33,11 @@ export default function Page() {
         </div>
 
         <h2 className="mb-4 text-2xl font-bold text-gray-800 dark:text-white/90">
-          Unauthorized Access
+          {t('title')}
         </h2>
 
         <p className="mt-6 mb-8 text-base text-gray-700 dark:text-gray-400 sm:text-lg">
-          You don&apos;t have permission to access this page. Please contact your administrator if you believe this is an error.
+          {t('description')}
         </p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -43,13 +45,13 @@ export default function Page() {
             href="/"
             className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
           >
-            Back to Home Page
+            {t('backToHome')}
           </Link>
           <button
             onClick={() => window.history.back()}
             className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
           >
-            Go Back
+            {t('goBack')}
           </button>
         </div>
       </div>

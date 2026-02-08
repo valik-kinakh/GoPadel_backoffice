@@ -15,6 +15,7 @@ import type { ClientResponse, ClientResponsePaginatedResponse } from "@/lib/webA
 import { useQuery } from "@tanstack/react-query";
 import { getApiPlayerClients } from "@/lib/webApi/generated/requests";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 interface PlayersTableProps {
   initialData: ClientResponse[];
@@ -29,6 +30,7 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
   initialCount,
   initialTotalPages,
 }) => {
+  const t = useTranslations("Players");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(initialPage);
@@ -86,9 +88,9 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
   };
 
   const itemsPerPageOptions = [
-    { value: "20", label: "20 per page" },
-    { value: "50", label: "50 per page" },
-    { value: "100", label: "100 per page" },
+    { value: "20", label: t("perPage", { count: 20 }) },
+    { value: "50", label: t("perPage", { count: 50 }) },
+    { value: "100", label: t("perPage", { count: 100 }) },
   ];
 
   return (
@@ -97,20 +99,20 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-700 dark:text-gray-300">
-            Show:
+            {t("show")}
           </span>
           <div className="w-40">
             <Select
               options={itemsPerPageOptions}
               defaultValue={count.toString()}
               onChange={handleCountChange}
-              placeholder="Items per page"
+              placeholder={t("itemsPerPage")}
             />
           </div>
         </div>
         {data?.totalCount && (
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            Total: {data.totalCount} players
+            {t("total", { count: data.totalCount })}
           </span>
         )}
       </div>
@@ -119,14 +121,14 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
         {isLoading && (
           <div className="flex items-center justify-center py-8">
-            <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+            <div className="text-gray-500 dark:text-gray-400">{t("loading")}</div>
           </div>
         )}
 
         {isError && (
           <div className="flex items-center justify-center py-8">
             <div className="text-red-600 dark:text-red-400">
-              Failed to load players. Please try again.
+              {t("loadingError")}
             </div>
           </div>
         )}
@@ -143,31 +145,31 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
                         isHeader
                         className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                       >
-                        ID
+                        {t("tableHeaders.id")}
                       </TableCell>
                       <TableCell
                         isHeader
                         className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                       >
-                        Player
+                        {t("tableHeaders.player")}
                       </TableCell>
                       <TableCell
                         isHeader
                         className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                       >
-                        Level
+                        {t("tableHeaders.level")}
                       </TableCell>
                       <TableCell
                         isHeader
                         className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                       >
-                        Rating
+                        {t("tableHeaders.rating")}
                       </TableCell>
                       <TableCell
                         isHeader
                         className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                       >
-                        Actions
+                        {t("tableHeaders.actions")}
                       </TableCell>
                     </TableRow>
                   </TableHeader>
@@ -177,7 +179,7 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
                     {players.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5} className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
-                          No players found
+                          {t("noPlayersFound")}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -232,7 +234,7 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
                               onClick={() => console.log('Player details:', player)}
                               className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
                             >
-                              Details
+                              {t("details")}
                             </button>
                           </TableCell>
                         </TableRow>
