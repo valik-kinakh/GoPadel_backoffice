@@ -14,4 +14,8 @@ export interface CreateAdminRequest {
   /** @nullable */
   fullName?: string | null;
   role?: AdminRole;
+  /** @nullable */
+  organizationId?: number | null;
+  /** @nullable */
+  clubId?: number | null;
 }

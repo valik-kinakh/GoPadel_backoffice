@@ -8,6 +8,8 @@ import type {
   AdminAuthResponse,
   AdminLoginRequest,
   AdminResponse,
+  AdminRolesPermissionsResponse,
+  ClientResponsePaginatedResponse,
   ClubAncillaryResponse,
   ClubResponse,
   ClubResponsePaginatedResponse,
@@ -18,18 +20,23 @@ import type {
   CreateClubRequest,
   CreateCourtRequest,
   CreateOrganizationRequest,
+  GetApiAdminTournamentParams,
   GetApiClubParams,
   GetApiCourtParams,
   GetApiOrganizationParams,
+  GetApiPlayerClientsParams,
   OrganizationResponse,
   OrganizationResponsePaginatedResponse,
   RecoverPasswordRequest,
   RecoverPasswordResponse,
   ResetPasswordRequest,
+  TournamentResponse,
+  TournamentResponsePaginatedResponse,
   UpdateClubAncillaryRequest,
   UpdateClubRequest,
   UpdateCourtRequest,
   UpdateOrganizationRequest,
+  UpsertTournamentRequest,
   ValidateTokenRequest,
   ValidateTokenResponse
 } from './models';
@@ -55,7 +62,7 @@ export const postApiAdminLogin = (
     }
   
 /**
- * @summary Create a new admin account (RootAdmin only)
+ * @summary Create a new admin account (hierarchical: RootAdmin can create any, OrganizationAdmin can create OrgAdmin/ClubAdmin, ClubAdmin can create ClubAdmin)
  */
 export const postApiAdmin = (
     createAdminRequest: CreateAdminRequest,
@@ -76,6 +83,18 @@ export const getApiAdmin = (
  options?: SecondParameter<typeof webApiFetch<AdminResponse>>,) => {
       return webApiFetch<AdminResponse>(
       {url: `/api/Admin`, method: 'GET'
+    },
+      options);
+    }
+  
+/**
+ * @summary Get current admin's roles and permissions
+ */
+export const getApiAdminMePermissions = (
+    
+ options?: SecondParameter<typeof webApiFetch<AdminRolesPermissionsResponse>>,) => {
+      return webApiFetch<AdminRolesPermissionsResponse>(
+      {url: `/api/Admin/me/permissions`, method: 'GET'
     },
       options);
     }
@@ -412,9 +431,89 @@ export const putApiOrganizationIdVerify = (
       options);
     }
   
+/**
+ * @summary Get clients (players) based on admin role and permissions
+ */
+export const getApiPlayerClients = (
+    params?: GetApiPlayerClientsParams,
+ options?: SecondParameter<typeof webApiFetch<ClientResponsePaginatedResponse>>,) => {
+      return webApiFetch<ClientResponsePaginatedResponse>(
+      {url: `/api/Player/clients`, method: 'GET',
+        params
+    },
+      options);
+    }
+  
+/**
+ * @summary Create a new tournament (Admin only)
+ */
+export const postApiAdminTournament = (
+    upsertTournamentRequest: UpsertTournamentRequest,
+ options?: SecondParameter<typeof webApiFetch<TournamentResponse>>,) => {
+      return webApiFetch<TournamentResponse>(
+      {url: `/api/admin/Tournament`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: upsertTournamentRequest
+    },
+      options);
+    }
+  
+/**
+ * @summary Get all tournaments with pagination (Admin only)
+ */
+export const getApiAdminTournament = (
+    params?: GetApiAdminTournamentParams,
+ options?: SecondParameter<typeof webApiFetch<TournamentResponsePaginatedResponse>>,) => {
+      return webApiFetch<TournamentResponsePaginatedResponse>(
+      {url: `/api/admin/Tournament`, method: 'GET',
+        params
+    },
+      options);
+    }
+  
+/**
+ * @summary Get tournament by ID (Admin only)
+ */
+export const getApiAdminTournamentId = (
+    id: number,
+ options?: SecondParameter<typeof webApiFetch<TournamentResponse>>,) => {
+      return webApiFetch<TournamentResponse>(
+      {url: `/api/admin/Tournament/${id}`, method: 'GET'
+    },
+      options);
+    }
+  
+/**
+ * @summary Update tournament (Admin only) - Partial update supported
+ */
+export const patchApiAdminTournamentId = (
+    id: number,
+    upsertTournamentRequest: UpsertTournamentRequest,
+ options?: SecondParameter<typeof webApiFetch<TournamentResponse>>,) => {
+      return webApiFetch<TournamentResponse>(
+      {url: `/api/admin/Tournament/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: upsertTournamentRequest
+    },
+      options);
+    }
+  
+/**
+ * @summary Delete tournament (Admin only)
+ */
+export const deleteApiAdminTournamentId = (
+    id: number,
+ options?: SecondParameter<typeof webApiFetch<void>>,) => {
+      return webApiFetch<void>(
+      {url: `/api/admin/Tournament/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
 export type PostApiAdminLoginResult = NonNullable<Awaited<ReturnType<typeof postApiAdminLogin>>>
 export type PostApiAdminResult = NonNullable<Awaited<ReturnType<typeof postApiAdmin>>>
 export type GetApiAdminResult = NonNullable<Awaited<ReturnType<typeof getApiAdmin>>>
+export type GetApiAdminMePermissionsResult = NonNullable<Awaited<ReturnType<typeof getApiAdminMePermissions>>>
 export type PostApiAdminPasswordRecoverResult = NonNullable<Awaited<ReturnType<typeof postApiAdminPasswordRecover>>>
 export type PostApiAdminPasswordValidateTokenResult = NonNullable<Awaited<ReturnType<typeof postApiAdminPasswordValidateToken>>>
 export type PostApiAdminPasswordResetResult = NonNullable<Awaited<ReturnType<typeof postApiAdminPasswordReset>>>
@@ -440,3 +539,9 @@ export type GetApiOrganizationIdResult = NonNullable<Awaited<ReturnType<typeof g
 export type PutApiOrganizationIdResult = NonNullable<Awaited<ReturnType<typeof putApiOrganizationId>>>
 export type DeleteApiOrganizationIdResult = NonNullable<Awaited<ReturnType<typeof deleteApiOrganizationId>>>
 export type PutApiOrganizationIdVerifyResult = NonNullable<Awaited<ReturnType<typeof putApiOrganizationIdVerify>>>
+export type GetApiPlayerClientsResult = NonNullable<Awaited<ReturnType<typeof getApiPlayerClients>>>
+export type PostApiAdminTournamentResult = NonNullable<Awaited<ReturnType<typeof postApiAdminTournament>>>
+export type GetApiAdminTournamentResult = NonNullable<Awaited<ReturnType<typeof getApiAdminTournament>>>
+export type GetApiAdminTournamentIdResult = NonNullable<Awaited<ReturnType<typeof getApiAdminTournamentId>>>
+export type PatchApiAdminTournamentIdResult = NonNullable<Awaited<ReturnType<typeof patchApiAdminTournamentId>>>
+export type DeleteApiAdminTournamentIdResult = NonNullable<Awaited<ReturnType<typeof deleteApiAdminTournamentId>>>
