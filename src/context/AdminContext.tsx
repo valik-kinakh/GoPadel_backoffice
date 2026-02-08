@@ -25,6 +25,7 @@ type AdminContextType = {
   setAdmin: (admin: AdminResponse | null) => void;
   clearAdmin: () => void;
   isHydrated: boolean;
+  isLoading: boolean;
   hasPermission: (permission: string) => boolean;
   hasRole: (role: string) => boolean;
 };
@@ -46,6 +47,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
   const [admin, setAdminState] = useState<AdminResponse | null>(null);
   const [permissions, setPermissions] = useState<AdminRolesPermissionsResponse | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const hasFetchedRef = useRef(false);
 
   // Hydrate admin from localStorage on mount
@@ -150,20 +152,25 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
       const token = await getSessionToken();
       if (!token) return;
 
-      const { payload, error, response } = await getApiAdmin({
-        safeFetch: true,
-      });
+      setIsLoading(true);
+      try {
+        const { payload, error, response } = await getApiAdmin({
+          safeFetch: true,
+        });
 
-      if (error) {
-        if (response?.status === 401) {
-          await clearTokens();
-          setAdmin(null);
-          router.replace("/signin");
+        if (error) {
+          if (response?.status === 401) {
+            await clearTokens();
+            setAdmin(null);
+            router.replace("/signin");
+          }
+          return;
         }
-        return;
-      }
 
-      setAdmin(payload ?? null);
+        setAdmin(payload ?? null);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     void fetchAdmin();
@@ -193,10 +200,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
       setAdmin,
       clearAdmin,
       isHydrated,
+      isLoading,
       hasPermission,
       hasRole,
     }),
-    [admin, permissions, clearAdmin, isHydrated, setAdmin, hasPermission, hasRole],
+    [admin, permissions, clearAdmin, isHydrated, isLoading, setAdmin, hasPermission, hasRole],
   );
 
   console.log(value);

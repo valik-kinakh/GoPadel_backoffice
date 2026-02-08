@@ -1,6 +1,7 @@
 {
   "Shared": {
-    "test": "Test"
+    "test": "Test",
+    "loading": "Завантаження..."
   },
   "NavItems": {
     "userAccess": "Доступ користувачів",
