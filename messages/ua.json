@@ -69,5 +69,40 @@
       "rating": "Рейтинг",
       "actions": "Дії"
     }
+  },
+  "UserAccess": {
+    "pageTitle": "Доступ користувачів",
+    "metaTitle": "Доступ користувачів | GoPadel Backoffice",
+    "metaDescription": "Управління доступом адміністраторів",
+    "createAdminUser": "Створити адміністратора",
+    "content": "Список користувачів з адміністративним доступом"
+  },
+  "CreateAdminUser": {
+    "pageTitle": "Створити адміністратора",
+    "metaTitle": "Створити адміністратора | GoPadel Backoffice",
+    "metaDescription": "Створення нового адміністратора системи",
+    "formTitle": "Інформація про адміністратора",
+    "email": "Електронна пошта",
+    "emailPlaceholder": "admin@example.com",
+    "password": "Пароль",
+    "passwordPlaceholder": "Введіть пароль",
+    "fullName": "Повне ім'я",
+    "fullNamePlaceholder": "Іван Іванов",
+    "role": "Роль",
+    "rolePlaceholder": "Виберіть роль",
+    "organizationId": "Організація",
+    "organizationPlaceholder": "Виберіть організацію",
+    "clubId": "Клуб",
+    "clubPlaceholder": "Виберіть клуб",
+    "submitButton": "Створити адміністратора",
+    "cancelButton": "Скасувати",
+    "emailRequired": "Електронна пошта є обов'язковою",
+    "emailInvalid": "Введіть дійсну електронну пошту",
+    "passwordRequired": "Пароль є обов'язковим",
+    "passwordMinLength": "Пароль повинен містити принаймні 8 символів",
+    "fullNameRequired": "Повне ім'я є обов'язковим",
+    "fullNameMinLength": "Повне ім'я повинно містити принаймні 2 символи",
+    "successMessage": "Адміністратора успішно створено",
+    "errorMessage": "Не вдалося створити адміністратора. Спробуйте ще раз."
   }
 }
