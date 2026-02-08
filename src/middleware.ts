@@ -21,12 +21,24 @@ export async function middleware(request: NextRequest) {
 
   const sessionToken = request.cookies.get(SESSION_COOKIE_NAME)?.value;
 
-  // If no session token, continue without fetching permissions
+  // If no session token, clear stale permissions cookie and continue
   if (!sessionToken) {
+    const existingPermissions = request.cookies.get(PERMISSIONS_COOKIE_NAME)?.value;
+    if (existingPermissions) {
+      const response = NextResponse.next();
+      response.cookies.delete(PERMISSIONS_COOKIE_NAME);
+      return response;
+    }
     return NextResponse.next();
   }
 
-  // Fetch permissions for all authenticated users on every page visit
+  // If permissions cookie already exists, skip API call
+  const existingPermissions = request.cookies.get(PERMISSIONS_COOKIE_NAME)?.value;
+  if (existingPermissions) {
+    return NextResponse.next();
+  }
+
+  // Fetch permissions only when cookie is missing
   try {
     const { payload, error } = await getApiAdminMePermissions({
       safeFetch: true,

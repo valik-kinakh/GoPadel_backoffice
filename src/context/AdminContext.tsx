@@ -68,6 +68,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // Decrypt permissions from cookie
+  const lastCookieRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (typeof window === "undefined" || !isHydrated) return;
 
@@ -79,38 +81,49 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({
           .find((row) => row.startsWith(`${PERMISSIONS_COOKIE_NAME}=`));
 
         if (!cookieString) {
+          lastCookieRef.current = null;
           setPermissions(null);
           return;
         }
 
-        // Extract value after the first '=' to handle base64 padding
+        // Extract value after the first '='
         const encryptedPermissions = cookieString.substring(
           PERMISSIONS_COOKIE_NAME.length + 1
         );
 
+        // Skip decryption if cookie value hasn't changed
+        if (encryptedPermissions === lastCookieRef.current) return;
+
         if (encryptedPermissions) {
+          lastCookieRef.current = encryptedPermissions;
           const decrypted = await decryptPermissions<AdminRolesPermissionsResponse>(
             encryptedPermissions,
             env.NEXT_PUBLIC_PERMISSIONS_DECRYPTION_SECRET,
           );
           setPermissions(decrypted);
         } else {
+          lastCookieRef.current = null;
           setPermissions(null);
         }
       } catch (error) {
         console.error("Failed to decrypt permissions:", error);
+        lastCookieRef.current = null;
         setPermissions(null);
       }
     };
 
+    // Decrypt once on mount
     void decryptPermissionsFromCookie();
 
-    // Poll for cookie changes (permissions are set by middleware)
-    const interval = setInterval(() => {
-      void decryptPermissionsFromCookie();
-    }, 1000); // Check every second
+    // Re-check when tab becomes visible (user navigated back, middleware may have refreshed cookie)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void decryptPermissionsFromCookie();
+      }
+    };
 
-    return () => clearInterval(interval);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [isHydrated]);
 
   const setAdmin = useCallback((nextAdmin: AdminResponse | null) => {
