@@ -14,6 +14,7 @@ import Select from "../form/Select";
 import type { ClientResponse, ClientResponsePaginatedResponse } from "@/lib/webApi/generated/models";
 import { useQuery } from "@tanstack/react-query";
 import { getApiPlayerClients } from "@/lib/webApi/generated/requests";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface PlayersTableProps {
   initialData: ClientResponse[];
@@ -28,6 +29,8 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
   initialCount,
   initialTotalPages,
 }) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(initialPage);
   const [count, setCount] = useState(initialCount);
 
@@ -65,10 +68,20 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", newPage.toString());
+    params.set("count", count.toString());
+    router.push(`/players?${params.toString()}`);
   };
 
   const handleCountChange = (newCount: string) => {
-    setCount(parseInt(newCount, 10));
+    const newCountValue = parseInt(newCount, 10);
+    setCount(newCountValue);
+    setPage(1); // Reset to first page when changing items per page
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", "1");
+    params.set("count", newCount);
+    router.push(`/players?${params.toString()}`);
     setPage(1); // Reset to first page when changing items per page
   };
 
@@ -109,7 +122,7 @@ const PlayersTable: React.FC<PlayersTableProps> = ({
             <div className="text-gray-500 dark:text-gray-400">Loading...</div>
           </div>
         )}
-        
+
         {isError && (
           <div className="flex items-center justify-center py-8">
             <div className="text-red-600 dark:text-red-400">
