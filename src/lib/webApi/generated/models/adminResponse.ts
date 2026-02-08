@@ -4,7 +4,6 @@
  * GoPadel.Admin
  * OpenAPI spec version: v1
  */
-import type { AdminRole } from './adminRole';
 
 export interface AdminResponse {
   id?: number;
@@ -12,10 +11,7 @@ export interface AdminResponse {
   email?: string | null;
   /** @nullable */
   fullName?: string | null;
-  role?: AdminRole;
   createdAt?: string;
   /** @nullable */
   lastLoginAt?: string | null;
-  /** @nullable */
-  permissions?: string[] | null;
 }

@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState,useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
+import { useAdmin } from "@/context/AdminContext";
 import {
   ChevronDownIcon,
   UserIcon,
@@ -24,79 +25,92 @@ type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
+  permission?: string;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { hasPermission } = useAdmin();
   const pathname = usePathname();
   const t = useTranslations('NavItems');
 
-  const navItems: NavItem[] = useMemo(() => [
-    {
-      icon: <UserIcon />,
-      name: t('players'),
-      path: route({ type: 'PLAYERS' })
-    },
-    {
-      icon: <CalenderIcon />,
-      name: t('matches'),
-      path: route({ type: 'MATCHES' })
-    },
-    {
-      icon: <ShootingStarIcon />,
-      name: t('tournaments'),
-      path: route({ type: 'TOURNAMENTS' })
-    },
-    {
-      icon: <GroupIcon />,
-      name: t('organizations'),
-      path: route({ type: 'ORGANIZATIONS' })
-    },
-    {
-      icon: <BoxIcon />,
-      name: t('clubs'),
-      path: route({ type: 'CLUBS' })
-    },
-    {
-      icon: <PieChartIcon />,
-      name: t('reports'),
-      path: route({ type: 'REPORTS' })
-    },
-    {
-      icon: <LockIcon />,
-      name: t('userAccess'),
-      path: route({ type: 'USER_ACCESS' })
-    },
-    {
-      icon: <GridIcon />,
-      name: t('settings'),
-      path: route({ type: 'SETTINGS' })
-    },
-    {
-      icon: <PlugInIcon />,
-      name: t('sanity'),
-      path: route({ type: 'STUDIO' })
-    },
-    {
-      icon: <BoltIcon />,
-      name: t('applicationSettings'),
-      path: route({ type: 'APPLICATION_SETTINGS' })
-    },
-    // {
-    //     icon: <BoxCubeIcon />,
-    //     name: "UI Elements",
-    //     subItems: [
-    //         { name: "Alerts", path: "/alerts", pro: false },
-    //         { name: "Avatar", path: "/avatars", pro: false },
-    //         { name: "Badge", path: "/badge", pro: false },
-    //         { name: "Buttons", path: "/buttons", pro: false },
-    //         { name: "Images", path: "/images", pro: false },
-    //         { name: "Modals", path: "/modals", pro: false },
-    //         { name: "Videos", path: "/videos", pro: false },
-    //     ],
-    // },
-  ], []);
+  const navItems: NavItem[] = useMemo(() => {
+    const allNavItems = [
+      {
+        icon: <UserIcon />,
+        name: t('players'),
+        path: route({ type: 'PLAYERS' }),
+        permission: 'CLIENTS_OVERVIEW' // Add permission requirement
+      },
+      {
+        icon: <CalenderIcon />,
+        name: t('matches'),
+        path: route({ type: 'MATCHES' })
+      },
+      {
+        icon: <ShootingStarIcon />,
+        name: t('tournaments'),
+        path: route({ type: 'TOURNAMENTS' })
+      },
+      {
+        icon: <GroupIcon />,
+        name: t('organizations'),
+        path: route({ type: 'ORGANIZATIONS' })
+      },
+      {
+        icon: <BoxIcon />,
+        name: t('clubs'),
+        path: route({ type: 'CLUBS' })
+      },
+      {
+        icon: <PieChartIcon />,
+        name: t('reports'),
+        path: route({ type: 'REPORTS' })
+      },
+      {
+        icon: <LockIcon />,
+        name: t('userAccess'),
+        path: route({ type: 'USER_ACCESS' })
+      },
+      {
+        icon: <GridIcon />,
+        name: t('settings'),
+        path: route({ type: 'SETTINGS' })
+      },
+      {
+        icon: <PlugInIcon />,
+        name: t('sanity'),
+        path: route({ type: 'STUDIO' })
+      },
+      {
+        icon: <BoltIcon />,
+        name: t('applicationSettings'),
+        path: route({ type: 'APPLICATION_SETTINGS' })
+      },
+      // {
+      //     icon: <BoxCubeIcon />,
+      //     name: "UI Elements",
+      //     subItems: [
+      //         { name: "Alerts", path: "/alerts", pro: false },
+      //         { name: "Avatar", path: "/avatars", pro: false },
+      //         { name: "Badge", path: "/badge", pro: false },
+      //         { name: "Buttons", path: "/buttons", pro: false },
+      //         { name: "Images", path: "/images", pro: false },
+      //         { name: "Modals", path: "/modals", pro: false },
+      //         { name: "Videos", path: "/videos", pro: false },
+      //     ],
+      // },
+    ];
+
+    // Filter out items that require permissions the user doesn't have
+    return allNavItems.filter((item) => {
+      if ('permission' in item && item.permission) {
+        return hasPermission(item.permission);
+      }
+      return true;
+    });
+  }, [hasPermission, t]);
 
   const renderMenuItems = (
     navItems: NavItem[],

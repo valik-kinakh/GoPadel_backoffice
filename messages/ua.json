@@ -1,6 +1,7 @@
 {
   "Shared": {
-    "test": "Test"
+    "test": "Test",
+    "loading": "Завантаження..."
   },
   "NavItems": {
     "userAccess": "Доступ користувачів",
@@ -41,5 +42,67 @@
     "emailHint": "Будь ласка, введіть дійсну електронну пошту.",
     "success": "Ми надіслали лист із подальшими інструкціями.",
     "error": "Не вдалося надіслати лист. Спробуйте ще раз."
+  },
+  "Unauthorized": {
+    "title": "Несанкціонований доступ",
+    "description": "Ви не маєте дозволу на доступ до цієї сторінки. Будь ласка, зверніться до адміністратора, якщо ви вважаєте, що це помилка.",
+    "backToHome": "Повернутися на головну",
+    "goBack": "Повернутися назад"
+  },
+  "Players": {
+    "pageTitle": "Гравці",
+    "metaTitle": "Гравці | GoPadel Backoffice",
+    "metaDescription": "Перегляд та управління гравцями на платформі GoPadel",
+    "loadError": "Не вдалося завантажити гравців. Будь ласка, спробуйте пізніше.",
+    "show": "Показати:",
+    "total": "Всього: {count} гравців",
+    "loading": "Завантаження...",
+    "loadingError": "Не вдалося завантажити гравців. Будь ласка, спробуйте ще раз.",
+    "perPage": "{count} на сторінці",
+    "itemsPerPage": "Елементів на сторінці",
+    "noPlayersFound": "Гравців не знайдено",
+    "details": "Деталі",
+    "tableHeaders": {
+      "id": "ID",
+      "player": "Гравець",
+      "level": "Рівень",
+      "rating": "Рейтинг",
+      "actions": "Дії"
+    }
+  },
+  "UserAccess": {
+    "pageTitle": "Доступ користувачів",
+    "metaTitle": "Доступ користувачів | GoPadel Backoffice",
+    "metaDescription": "Управління доступом адміністраторів",
+    "createAdminUser": "Створити адміністратора",
+    "content": "Список користувачів з адміністративним доступом"
+  },
+  "CreateAdminUser": {
+    "pageTitle": "Створити адміністратора",
+    "metaTitle": "Створити адміністратора | GoPadel Backoffice",
+    "metaDescription": "Створення нового адміністратора системи",
+    "formTitle": "Інформація про адміністратора",
+    "email": "Електронна пошта",
+    "emailPlaceholder": "admin@example.com",
+    "password": "Пароль",
+    "passwordPlaceholder": "Введіть пароль",
+    "fullName": "Повне ім'я",
+    "fullNamePlaceholder": "Іван Іванов",
+    "role": "Роль",
+    "rolePlaceholder": "Виберіть роль",
+    "organizationId": "Організація",
+    "organizationPlaceholder": "Виберіть організацію",
+    "clubId": "Клуб",
+    "clubPlaceholder": "Виберіть клуб",
+    "submitButton": "Створити адміністратора",
+    "cancelButton": "Скасувати",
+    "emailRequired": "Електронна пошта є обов'язковою",
+    "emailInvalid": "Введіть дійсну електронну пошту",
+    "passwordRequired": "Пароль є обов'язковим",
+    "passwordMinLength": "Пароль повинен містити принаймні 8 символів",
+    "fullNameRequired": "Повне ім'я є обов'язковим",
+    "fullNameMinLength": "Повне ім'я повинно містити принаймні 2 символи",
+    "successMessage": "Адміністратора успішно створено",
+    "errorMessage": "Не вдалося створити адміністратора. Спробуйте ще раз."
   }
 }
