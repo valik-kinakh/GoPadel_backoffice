@@ -7,8 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint ./src/* --fix",
+    "lint:ci": "eslint ./src/*",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "types-generate-web-api": "curl -o src/lib/webApi/openapi.json https://admin-api.padel-net.com.ua/swagger/v1/swagger.json && orval --config ./orval.web-api.config.ts",
-    "nodecheck": "CODE_NODE_VERSION=\"v$(cat ./.nvmrc)\" && NODE_VERSION=$(node --version) && if [ $NODE_VERSION != $CODE_NODE_VERSION ]; then echo \"ERROR: Project Node: $CODE_NODE_VERSION, Actual Node: $NODE_VERSION\n\" && exit 1; fi",
+    "nodecheck": "node -e \"const fs=require('fs');const want=fs.readFileSync('./.nvmrc','utf8').trim().replace(/^v/,'').split('.')[0];const got=process.versions.node.split('.')[0];if(want!==got){console.error('ERROR: Project requires Node v'+want+'.x, but running v'+process.versions.node);process.exit(1);}\"",
     "lint:typecheck": "tsc --noEmit",
     "prepare": "husky"
   },
@@ -37,6 +41,8 @@
     "@trpc/client": "^11.8.1",
     "@trpc/react-query": "^11.8.1",
     "@trpc/server": "^11.8.1",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "apexcharts": "^4.7.0",
     "autoprefixer": "^10.4.22",
     "flatpickr": "^4.6.13",
@@ -60,19 +66,29 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
     "@eslint/eslintrc": "^3.3.1",
     "@svgr/webpack": "^8.1.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.19.25",
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",
     "@types/react-transition-group": "^4.4.12",
+    "@vitejs/plugin-react": "^6.0.2",
+    "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^9.39.1",
     "eslint-config-next": "15.1.3",
     "husky": "^9.1.7",
+    "jsdom": "^29.1.1",
     "orval": "^7.13.2",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.8"
   },
   "overrides": {
     "@react-jvectormap/core": {

@@ -68,8 +68,8 @@ export function route(params: RouteTypeParamsMap): string {
 
   // if (params.type === 'USER_BY_ID') return userUrl('/user/[userId]', params);
 
-  // Don't touch. Forces TypeScript to make warnings about missing cases above.
-  // @ts-ignore
+  // Forces a TypeScript compile error above if a route `type` case is missing.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _exhaustiveCheck: never = params;
 
   const failedParams = params as RouteTypeParamsMap;

@@ -1,0 +1,57 @@
+# =============================================================================
+# Release Please — automated SemVer release management for the `main` branch.
+# =============================================================================
+#
+# WHAT THIS DOES (the release lifecycle):
+#   1. On every push to `main`, release-please inspects the Conventional Commits
+#      that have landed since the last release and OPENS or UPDATES a single
+#      long-lived "Release PR".
+#        - `feat:`            -> minor bump
+#        - `fix:` / `perf:`   -> patch bump
+#        - `feat!:` / `BREAKING CHANGE:` footer -> major bump
+#      That Release PR bumps `package.json` "version" and regenerates
+#      `CHANGELOG.md` from those commit messages.
+#
+#   2. When a maintainer MERGES that Release PR into `main`, release-please:
+#        - creates the git tag (e.g. `v2.1.0`) for the new version, and
+#        - publishes a GitHub Release for that tag.
+#
+#   3. That published GitHub Release is the trigger for `deploy-production.yml`,
+#      which performs the blue-green production deploy. In other words, this
+#      workflow is the gate that turns merged commits into a versioned,
+#      releasable artifact; the production deploy reacts to the Release it cuts.
+#
+# State is manifest-driven (single package at the repo root):
+#   - release-please-config.json     -> release configuration
+#   - .release-please-manifest.json  -> current released version per package
+# =============================================================================
+
+name: Release Please
+
+# Run only on pushes to the production branch. Each push re-evaluates the
+# pending changes and keeps the Release PR (or the resulting tag/Release) in sync.
+on:
+  push:
+    branches: [main]
+
+# Least-privilege token scopes required by the action:
+#   - contents: write       -> create commits, tags and GitHub Releases
+#   - pull-requests: write   -> open and update the Release PR
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Manage Release PR / cut Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run release-please
+        uses: googleapis/release-please-action@v4
+        with:
+          # The default GITHUB_TOKEN is sufficient: it can push the Release PR
+          # branch, update the PR, and create the tag + GitHub Release.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Manifest-driven configuration (single root package).
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

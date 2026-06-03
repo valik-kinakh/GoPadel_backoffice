@@ -1,0 +1,150 @@
+# =============================================================================
+# Task 8 — Continuous Delivery: STAGING deploy (develop -> Vercel Preview env)
+# -----------------------------------------------------------------------------
+# Maps to Task 8 requirements:
+#   * "automate deployment from the pipeline" — this job is triggered by the
+#     pipeline (the CI workflow), never by a human and never by Vercel's native
+#     Git integration (which is disabled via vercel.json -> git.deploymentEnabled).
+#   * "staging + production environments" — this file owns STAGING. Every green
+#     CI run on `develop` ships the exact built commit to the Vercel *preview*
+#     environment, which is our staging target.
+#
+# Why `workflow_run` instead of `push`?
+#   We only want to deploy a commit that ALREADY passed CI (lint, typecheck,
+#   tests, build). Chaining off the "CI" workflow's completion guarantees we
+#   never publish a red build to staging. We then re-checkout the exact commit
+#   SHA that CI validated (head_sha) to avoid races with newer pushes.
+# =============================================================================
+
+name: Deploy Staging
+
+on:
+  # Fire only after the "CI" workflow finishes a run that was triggered on the
+  # develop branch. `completed` covers success AND failure; we filter to success
+  # inside the job's `if:` guard below.
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - develop
+
+# Cancel a superseded staging deploy if a newer one starts for the same branch,
+# so staging always converges on the latest validated commit.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+# Least-privilege token: we only read repo contents to checkout the commit.
+permissions:
+  contents: read
+
+# Vercel CLI reads these from the environment for every command, so the project
+# is unambiguously identified without an interactive `vercel link`.
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy-staging:
+    name: Build & deploy to staging (Vercel preview)
+    runs-on: ubuntu-latest
+
+    # Guard: only proceed when the upstream CI run actually SUCCEEDED.
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      # --- Checkout the EXACT commit CI validated -------------------------------
+      # `workflow_run` events default to the default branch's HEAD, which may be
+      # ahead of the commit CI ran on. Pin to head_sha for a deterministic build.
+      - name: Checkout validated commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # --- Toolchain: Node pinned via .nvmrc, npm cache enabled ----------------
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      # --- Install deps -------------------------------------------------------
+      # HUSKY=0 makes the `prepare` (husky install) script a no-op in CI.
+      - name: Install dependencies
+        run: npm ci
+        env:
+          HUSKY: "0"
+
+      # --- Vercel CLI ---------------------------------------------------------
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      # --- Pull project settings + env for the PREVIEW (staging) environment ---
+      - name: Pull Vercel environment (preview)
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      # --- Build using Vercel's build pipeline so we can deploy --prebuilt -----
+      - name: Build (Vercel)
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      # --- Deploy the prebuilt output and capture the resulting URL ------------
+      # `vercel deploy --prebuilt` prints the deployment URL to stdout; we trim
+      # to the last line for safety and expose it as a step output.
+      - name: Deploy to staging
+        id: deploy
+        run: |
+          url="$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} | tail -n1)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed staging URL: $url"
+
+      # --- Smoke check: health endpoint + root ---------------------------------
+      # Fail the job (and therefore the staging deploy signal) if the freshly
+      # deployed app is not actually serving a healthy response.
+      - name: Smoke check staging
+        env:
+          STAGING_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+
+          echo "Health check: ${STAGING_URL}/api/health"
+          # --fail -> non-2xx becomes a curl error; retry to absorb cold starts.
+          body="$(curl --fail --silent --show-error \
+                       --retry 5 --retry-delay 5 \
+                       "${STAGING_URL}/api/health")"
+
+          # Explicitly assert HTTP 200 (separate request, write-out status only).
+          status="$(curl --fail --silent --show-error \
+                         --retry 5 --retry-delay 5 \
+                         --output /dev/null --write-out '%{http_code}' \
+                         "${STAGING_URL}/api/health")"
+          if [ "$status" != "200" ]; then
+            echo "::error::Health endpoint returned HTTP $status (expected 200)"
+            exit 1
+          fi
+
+          # Assert the JSON payload signals health (contains "ok").
+          echo "Health body: $body"
+          echo "$body" | grep -q "ok" || {
+            echo "::error::Health response did not contain \"ok\""
+            exit 1
+          }
+
+          # Sanity-check the app root renders too.
+          echo "Root check: ${STAGING_URL}/"
+          curl --fail --silent --show-error "${STAGING_URL}/" > /dev/null
+
+          echo "Staging smoke check passed."
+
+      # --- Surface the staging URL in the run summary --------------------------
+      - name: Publish staging URL to summary
+        if: success()
+        env:
+          STAGING_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          {
+            echo "## Staging deployment"
+            echo ""
+            echo "Commit: \`${{ github.event.workflow_run.head_sha }}\`"
+            echo "URL: ${STAGING_URL}"
+          } >> "$GITHUB_STEP_SUMMARY"

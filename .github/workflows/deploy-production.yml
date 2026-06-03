@@ -1,0 +1,197 @@
+# =============================================================================
+# Task 8 — Continuous Deployment: PRODUCTION (BLUE-GREEN via alias promotion)
+# -----------------------------------------------------------------------------
+# Maps to Task 8 requirements:
+#   * "automate deployment from the pipeline" — production ships automatically
+#     when a GitHub *Release* is published (release-please tags + publishes it).
+#   * "staging + production environments" — this file owns PRODUCTION.
+#   * "blue-green deployment strategy" — we build & deploy a fresh production
+#     deployment WITHOUT giving it the production domain (the "green" slot),
+#     smoke-test green in isolation, then ATOMICALLY swap the production alias
+#     onto green via `vercel promote`. The previously-live deployment ("blue")
+#     stays warm and instantly re-promotable.
+#   * "rollback strategy" — on ANY failure we auto-`vercel rollback` to the last
+#     stable deployment; a manual rollback path also exists in rollback.yml.
+#
+# MANUAL APPROVAL GATE:
+#   This job declares `environment: production`. Configure a GitHub Environment
+#   named "production" in repo Settings -> Environments with a "Required
+#   reviewers" protection rule. The run then PAUSES for human approval before
+#   any deploy step executes — required-reviewer gating for production releases.
+# =============================================================================
+
+name: Deploy Production
+
+on:
+  # Only when a GitHub Release is published (created by release-please on merge
+  # of the Release PR into main). Drafts/prereleases edits do not trigger.
+  release:
+    types:
+      - published
+
+# Never run two production promotions at once; let an in-flight one finish so we
+# don't race the production alias swap.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy:
+    name: Blue-green production deploy
+    runs-on: ubuntu-latest
+
+    # Binds the job to the protected "production" GitHub Environment so the
+    # configured required-reviewers rule gates execution (manual approval).
+    environment: production
+
+    steps:
+      # --- Checkout the exact released tag -------------------------------------
+      # tag_name is the SemVer tag release-please created (e.g. v1.4.0). Using it
+      # guarantees we build the precise source that was released, not branch HEAD.
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      # --- Toolchain ----------------------------------------------------------
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          HUSKY: "0"
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      # --- Pull PRODUCTION settings + env -------------------------------------
+      - name: Pull Vercel environment (production)
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      # --- Build for production ------------------------------------------------
+      - name: Build (Vercel, production)
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      # --- Deploy GREEN (production build, but DO NOT assign prod domain) -------
+      # `--skip-domain` produces a fully production-grade deployment that is NOT
+      # yet aliased to the production domain. This is the "green" environment we
+      # validate before flipping traffic to it.
+      #
+      # NOTE: `--skip-domain` requires a recent Vercel CLI (we install @latest
+      # above). If your CLI predates it, fall back to deploying as a preview
+      # (drop `--prod --skip-domain`, deploy a normal preview) and then promote
+      # that deployment — `vercel promote` performs the same blue-green swap.
+      - name: Deploy GREEN (no promotion yet)
+        id: green
+        run: |
+          green="$(vercel deploy --prebuilt --prod --skip-domain --token=${{ secrets.VERCEL_TOKEN }} | tail -n1)"
+          echo "url=$green" >> "$GITHUB_OUTPUT"
+          echo "Green deployment: $green"
+
+      # --- Smoke-check GREEN in isolation (before any traffic flip) ------------
+      - name: Smoke check GREEN
+        env:
+          GREEN_URL: ${{ steps.green.outputs.url }}
+        run: |
+          set -euo pipefail
+
+          echo "Health check: ${GREEN_URL}/api/health"
+          body="$(curl --fail --silent --show-error \
+                       --retry 5 --retry-delay 5 \
+                       "${GREEN_URL}/api/health")"
+
+          status="$(curl --fail --silent --show-error \
+                         --retry 5 --retry-delay 5 \
+                         --output /dev/null --write-out '%{http_code}' \
+                         "${GREEN_URL}/api/health")"
+          if [ "$status" != "200" ]; then
+            echo "::error::GREEN health endpoint returned HTTP $status (expected 200)"
+            exit 1
+          fi
+
+          echo "Health body: $body"
+          echo "$body" | grep -q "ok" || {
+            echo "::error::GREEN health response did not contain \"ok\""
+            exit 1
+          }
+
+          echo "Root check: ${GREEN_URL}/"
+          curl --fail --silent --show-error "${GREEN_URL}/" > /dev/null
+
+          echo "GREEN smoke check passed."
+
+      # --- PROMOTE: atomic blue -> green swap of the production alias ----------
+      # This is the instant cutover. Until this point production still served the
+      # old (blue) deployment; after it, traffic is on green.
+      - name: Promote GREEN to production
+        env:
+          GREEN_URL: ${{ steps.green.outputs.url }}
+        run: |
+          echo "Promoting $GREEN_URL to production..."
+          vercel promote "$GREEN_URL" --token=${{ secrets.VERCEL_TOKEN }}
+          echo "Promotion complete."
+
+      # --- Post-promote smoke check against the real production domain ----------
+      # Validates the live alias now points at a healthy deployment. Skips
+      # gracefully when the optional PRODUCTION_URL repo variable is not set.
+      - name: Post-promote smoke check (production domain)
+        if: ${{ vars.PRODUCTION_URL != '' }}
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: |
+          set -euo pipefail
+          echo "Production health check: ${PRODUCTION_URL}/api/health"
+          curl --fail --silent --show-error \
+               --retry 5 --retry-delay 5 \
+               "${PRODUCTION_URL}/api/health" > /dev/null
+          echo "Production smoke check passed."
+
+      # --- Success summary -----------------------------------------------------
+      - name: Publish production deployment to summary
+        if: success()
+        env:
+          GREEN_URL: ${{ steps.green.outputs.url }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          {
+            echo "## Production deployment (blue-green)"
+            echo ""
+            echo "Version: \`${RELEASE_TAG}\`"
+            echo "Promoted deployment (green): ${GREEN_URL}"
+            if [ -n "${PRODUCTION_URL}" ]; then
+              echo "Production URL: ${PRODUCTION_URL}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # --- AUTO-ROLLBACK on ANY failure ---------------------------------------
+      # Runs whenever a prior step failed (build, green smoke, promote, or the
+      # post-promote check). `vercel rollback` re-points the production alias to
+      # the previous stable deployment — the blue slot — restoring service.
+      - name: Auto-rollback on failure
+        if: failure()
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          echo "::warning::Production deploy failed — attempting automatic rollback."
+          vercel rollback --yes --token=${{ secrets.VERCEL_TOKEN }} || \
+            echo "::error::Automatic rollback command failed; manual intervention required."
+          {
+            echo "## :warning: Production deploy FAILED — rollback attempted"
+            echo ""
+            echo "Version that failed: \`${RELEASE_TAG}\`"
+            echo "Ran \`vercel rollback --yes\` to restore the previous deployment."
+            echo "Verify the production domain and, if needed, run the manual"
+            echo "**Rollback Production** workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
