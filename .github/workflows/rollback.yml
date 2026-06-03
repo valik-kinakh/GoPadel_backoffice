@@ -1,0 +1,111 @@
+# =============================================================================
+# Task 8 — ROLLBACK strategy (manual, blue-green safe)
+# -----------------------------------------------------------------------------
+# Maps to Task 8 requirements:
+#   * "rollback strategy" — operators can revert production at any time without
+#     a redeploy. Two modes:
+#       1. Targeted promote: provide a known-good deployment URL -> we re-alias
+#          the production domain onto it (`vercel promote`). Use this to jump to
+#          a specific prior deployment.
+#       2. Step-back: leave the input blank -> `vercel rollback` re-points the
+#          production alias to the immediately previous deployment (the "blue"
+#          slot from the last blue-green swap).
+#
+# This complements the AUTOMATIC rollback baked into deploy-production.yml; this
+# file is the human-triggered escape hatch (e.g. a bad release noticed later).
+#
+# APPROVAL GATE:
+#   Bound to the protected "production" GitHub Environment, so the same
+#   required-reviewers rule gates a rollback the same way it gates a deploy.
+# =============================================================================
+
+name: Rollback Production
+
+on:
+  # Manually triggered from the Actions tab.
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: "Specific deployment URL to promote (blank = roll back to the previous deployment)"
+        required: false
+        type: string
+        default: ""
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  rollback:
+    name: Roll back production
+    runs-on: ubuntu-latest
+
+    # Protected environment -> manual-approval / reviewer gating on rollback too.
+    environment: production
+
+    steps:
+      # No repo source is needed to operate the production alias, but the CLI
+      # must be installed.
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      # --- Perform the rollback ------------------------------------------------
+      # The dispatch input is untrusted free-form text, so it is passed via env
+      # (never inlined into the shell) and the URL is validated before use.
+      - name: Roll back
+        id: rollback
+        env:
+          DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${DEPLOYMENT_URL}" ]; then
+            # Validate the supplied value looks like a Vercel deployment URL/host
+            # before handing it to the CLI (defense against injection / typos).
+            case "${DEPLOYMENT_URL}" in
+              https://*.vercel.app|https://*.vercel.app/*|*.vercel.app)
+                ;;
+              *)
+                echo "::error::deployment_url must be a Vercel deployment URL (https://<id>.vercel.app)."
+                exit 1
+                ;;
+            esac
+
+            echo "Promoting specified deployment to production: ${DEPLOYMENT_URL}"
+            vercel promote "${DEPLOYMENT_URL}" --token="${VERCEL_TOKEN}"
+            echo "result=promoted ${DEPLOYMENT_URL}" >> "$GITHUB_OUTPUT"
+          else
+            echo "No URL provided — rolling back to the previous deployment."
+            vercel rollback --yes --token="${VERCEL_TOKEN}"
+            echo "result=rolled back to previous deployment" >> "$GITHUB_OUTPUT"
+          fi
+
+      # --- Report --------------------------------------------------------------
+      - name: Publish rollback result to summary
+        if: always()
+        env:
+          DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          RESULT: ${{ steps.rollback.outputs.result }}
+          STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "## Production rollback"
+            echo ""
+            echo "Outcome: \`${STATUS}\`"
+            if [ -n "${DEPLOYMENT_URL}" ]; then
+              echo "Requested target: ${DEPLOYMENT_URL}"
+            else
+              echo "Requested target: previous deployment (step-back)"
+            fi
+            if [ -n "${RESULT}" ]; then
+              echo "Action: ${RESULT}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

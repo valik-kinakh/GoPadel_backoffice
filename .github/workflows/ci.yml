@@ -1,0 +1,189 @@
+# ---------------------------------------------------------------------------
+# Continuous Integration (CI) workflow  —  Assignment Task 7
+# ---------------------------------------------------------------------------
+# This workflow implements the "CI" requirement of Task 7:
+#   * Triggers on every push and pull request to the long-lived branches
+#     (develop = staging integration, main = production release branch).
+#   * Runs the four quality gates in PARALLEL (no `needs:` chaining), so a
+#     failure in one is reported independently and the slowest job alone
+#     determines wall-clock time:
+#       1. lint       -> ESLint (non-mutating: `lint:ci`, never the --fix variant)
+#       2. typecheck  -> `tsc --noEmit`
+#       3. test       -> Vitest with V8 coverage + uploaded coverage artifact
+#                        and a Markdown coverage summary posted to the run.
+#       4. build      -> `next build` (proves the app compiles for Vercel).
+#   * Produces "build reports available to the team": the coverage table and
+#     the build-success line are written to $GITHUB_STEP_SUMMARY, and the raw
+#     coverage report is uploaded as a downloadable artifact.
+#
+# Env gotchas baked in (see PROJECT notes):
+#   * SKIP_ENV_VALIDATION=1 on every job that compiles/type-checks/tests/builds,
+#     because src/env.js (@t3-oss/env-nextjs) throws on missing real secrets,
+#     which CI deliberately does not have.
+#   * HUSKY=0 top-level, so `npm ci` -> `prepare` (husky) is a no-op in CI.
+# ---------------------------------------------------------------------------
+
+name: CI
+
+# Run on PRs targeting, and direct pushes to, the two protected branches.
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# Cancel superseded runs for the same workflow + ref (e.g. rapid pushes to a
+# PR branch) so we never burn minutes on stale commits.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Top-level env applies to every job: disable husgit hooks during `npm ci`.
+env:
+  HUSKY: "0"
+
+jobs:
+  # -------------------------------------------------------------------------
+  # 1) LINT — ESLint in report-only mode (must NOT auto-fix in CI).
+  # -------------------------------------------------------------------------
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint (CI / non-mutating)
+        run: npm run lint:ci
+
+  # -------------------------------------------------------------------------
+  # 2) TYPECHECK — TypeScript strict, no emit.
+  # -------------------------------------------------------------------------
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        # env.js validation would explode without real secrets -> skip it.
+        env:
+          SKIP_ENV_VALIDATION: "1"
+        run: npm run lint:typecheck
+
+  # -------------------------------------------------------------------------
+  # 3) TEST — Vitest run with V8 coverage, artifact upload + summary table.
+  # -------------------------------------------------------------------------
+  test:
+    name: Test (coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        env:
+          SKIP_ENV_VALIDATION: "1"
+        run: npm run test:coverage
+
+      - name: Upload coverage report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          # Fail loudly if the coverage dir is empty/missing — that means the
+          # test or coverage config silently broke.
+          if-no-files-found: error
+
+      - name: Coverage summary
+        # "Build report available to the team": parse the json-summary that the
+        # vitest config emits (coverage/coverage-summary.json) and render a
+        # Markdown table into the GitHub Actions run summary. Guarded so a
+        # missing file degrades gracefully instead of failing the job.
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "coverage/coverage-summary.json";
+            const out = process.env.GITHUB_STEP_SUMMARY;
+            if (!fs.existsSync(path)) {
+              fs.appendFileSync(out, "### Coverage\n\n_No coverage summary found at " + path + "._\n");
+              process.exit(0);
+            }
+            const total = JSON.parse(fs.readFileSync(path, "utf8")).total;
+            const pct = (m) => (total[m] && typeof total[m].pct === "number" ? total[m].pct : "n/a");
+            const lines = [
+              "### Coverage",
+              "",
+              "| Metric | % |",
+              "| --- | --- |",
+              "| Lines | " + pct("lines") + " |",
+              "| Statements | " + pct("statements") + " |",
+              "| Functions | " + pct("functions") + " |",
+              "| Branches | " + pct("branches") + " |",
+              "",
+            ];
+            fs.appendFileSync(out, lines.join("\n"));
+          '
+
+  # -------------------------------------------------------------------------
+  # 4) BUILD — `next build` to prove the production bundle compiles.
+  # -------------------------------------------------------------------------
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Next.js production build
+        # Skip env.js validation, but `next build` still inlines NEXT_PUBLIC_*
+        # client vars at build time, so provide harmless dummies that satisfy
+        # the schema (the decryption secret must be >= 32 chars).
+        env:
+          SKIP_ENV_VALIDATION: "1"
+          NEXT_PUBLIC_SANITY_PROJECT_ID: "ci"
+          NEXT_PUBLIC_SANITY_DATASET: "ci"
+          NEXT_PUBLIC_API_URL: "https://example.com"
+          NEXT_PUBLIC_PERMISSIONS_DECRYPTION_SECRET: "ci-dummy-decryption-secret-0123456789"
+        run: npm run build
+
+      - name: Build summary
+        # "Build report available to the team": record the built commit SHA.
+        run: echo "Build succeeded for ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
